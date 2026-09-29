@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+    <title>Detección facial con vídeo</title>
+    <script
+        defer
+        src="face-api.js">
+    </script>
+    <script
+        defer
+        src="script.js"> //SCRIPT PROPIO
+    </script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: black;
+        }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+       
+        #video-container {
+            position: relative;
+            width: 720px;
+            max-width: 100vw;
+            max-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        #video {
+            display: block;
+            width: 720px;
+            height: auto;
+            max-width: 100vw;
+            max-height: 100vh;
+            object-fit: contain;
+        }
+
+        #canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="video-container">
+        <video
+            id="video"
+            autoplay
+            muted
+            playsinline
+            loop
+        >
+            <source
+                src="video.mp4"
+                type="video/mp4"
+            >
+        </video>
+        <canvas
+            id="canvas">
+        </canvas>
+    </div>
+</body>
+</html>
