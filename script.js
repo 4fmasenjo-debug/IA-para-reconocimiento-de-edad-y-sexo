@@ -22,11 +22,6 @@ const MASK_SCALE = 0.85;
 const loadedImages = {};
 let modelsLoaded = false;
 let detectionStarted = false;
-
-// ============================================================
-// OBTENER IMAGEN SEGÚN EDAD Y GÉNERO
-// ============================================================
-
 function getMaskImagePath(age, gender) {
     if (gender !== "male" && gender !== "female") {
         return null;
@@ -39,11 +34,6 @@ function getMaskImagePath(age, gender) {
     }
     return MASK_IMAGES[gender].senior;
 }
-
-// ============================================================
-// CARGAR IMAGEN
-// ============================================================
-
 function loadImage(src) {
     return new Promise(resolve => {
         if (loadedImages[src]) {
@@ -53,14 +43,10 @@ function loadImage(src) {
         const img = new Image();
         img.onload = () => {
             loadedImages[src] = img;
-            console.log("Imagen cargada:", src);
             resolve(img);
         };
         img.onerror = () => {
-            console.error(
-                "No se pudo cargar la imagen:",
-                src
-            );
+            console.error("No se pudo cargar:", src);
             resolve(null);
         };
         img.src = src;
@@ -68,7 +54,7 @@ function loadImage(src) {
 }
 
 // ============================================================
-// CARGAR TODAS LAS MÁSCARAS
+// CARGAR TODAS LAS IMÁGENES
 // ============================================================
 
 async function loadMaskImages() {
@@ -83,63 +69,49 @@ async function loadMaskImages() {
     await Promise.all(
         imagePaths.map(path => loadImage(path))
     );
-    console.log("Todas las imágenes están cargadas");
 }
-
 // ============================================================
-// CARGAR MODELOS
+// CARGAR MODELOS DE FACE-API
 // ============================================================
 
 async function loadModels() {
-    console.log;
-    console.log;
-    console.log;
     try {
         await faceapi.nets.tinyFaceDetector.loadFromUri("./models");
-        console.log("TinyFaceDetector cargado");
         await faceapi.nets.faceLandmark68Net.loadFromUri("./models");
-        console.log("FaceLandmark68 cargado");
         await faceapi.nets.ageGenderNet.loadFromUri("./models");
-        console.log("AgeGenderNet cargado");
         modelsLoaded = true;
-        console.log;
-        console.log;
-        console.log;
+        console.log("Modelos cargados correctamente");
         await loadMaskImages();
         await video.play();
     } catch (error) {
+
         modelsLoaded = false;
-        console.error;
-        console.error;
-        console.error;
-        console.error(error);
+
         console.error(
+            "Error cargando los modelos:",
+            error
         );
     }
 }
-window.addEventListener("DOMContentLoaded", () => {
-    loadModels();
-});
-
-// ============================================================
-// VÍDEO
-// ============================================================
-
-video.addEventListener("play", () => {
-    console.log("Vídeo reproduciéndose");
-    if (!modelsLoaded) {
-        console.error(
-        );
-        return;
+window.addEventListener(
+    "DOMContentLoaded",
+    () => {
+        loadModels();
     }
-    setupCanvas();
-    startDetection();
-});
-
-// ============================================================
-// CONFIGURAR CANVAS
-// ============================================================
-
+);
+video.addEventListener(
+    "play",
+    () => {
+        if (!modelsLoaded) {
+            console.error(
+                "Los modelos todavía no están cargados"
+            );
+            return;
+        }
+        setupCanvas();
+        startDetection();
+    }
+);
 function setupCanvas() {
     const width = video.clientWidth;
     const height = video.clientHeight;
@@ -147,16 +119,10 @@ function setupCanvas() {
     canvas.height = height;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
-    console.log(
-        "Canvas:",
-        width,
-        "x",
-        height
-    );
 }
 
 // ============================================================
-// DETECCIÓN
+// INICIAR DETECCIÓN
 // ============================================================
 
 function startDetection() {
@@ -164,7 +130,6 @@ function startDetection() {
         return;
     }
     detectionStarted = true;
-    console.log("Iniciando detección facial...");
     const displaySize = {
         width: video.clientWidth,
         height: video.clientHeight
@@ -173,135 +138,143 @@ function startDetection() {
         canvas,
         displaySize
     );
-    setInterval(async () => {
-        if (!modelsLoaded) {
-            return;
-        }
-        let detections;
-        try {
-            detections = await faceapi
-                .detectAllFaces(
-                    video,
-                    new faceapi.TinyFaceDetectorOptions({
-                        inputSize: 512,
-                        scoreThreshold: 0.35
-                    })
-                )
-                .withFaceLandmarks()
-                .withAgeAndGender();
-        } catch (error) {
-            console.error(
-                "Error detectando:",
-                error
-            );
-            return;
-        }
-        ctx.clearRect(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-        const resizedDetections =
-            faceapi.resizeResults(
-                detections,
-                displaySize
-            );
-
-        // ====================================================
-        // PROCESAR CADA PERSONA
-        // ====================================================
-
-        resizedDetections.forEach(
-            (detection, index) => {
-
-                // =============================================
-                // EDAD
-                // =============================================
-
-                const age = Math.round(
-                    detection.age
-                );
-
-                // =============================================
-                // GÉNERO
-                // =============================================
-
-                const gender =
-                    detection.gender;
-
-                // =============================================
-                // PROBABILIDAD
-                // =============================================
-
-                const genderProbability =
-                    Math.round(
-                        detection.genderProbability * 100
-                    );
-                console.log(
-                    `Persona ${index + 1}:`,
-                    `Edad=${age}`,
-                    `Género=${gender}`,
-                    `Confianza=${genderProbability}%`
-                );
-
-                // =============================================
-                // OBTENER MÁSCARA
-                // =============================================
-
-                const imagePath =
-                    getMaskImagePath(
-                        age,
-                        gender
-                    );
-
-                if (!imagePath) {
-                    return;
-                }
-                const maskImage =
-                    loadedImages[imagePath];
-
-                if (!maskImage) {
-                    return;
-                }
-
-                // =============================================
-                // POSICIÓN DE LA CARA
-                // =============================================
-
-                const box =
-                    detection.detection.box;
-                const maskWidth =
-                    box.width * MASK_SCALE;
-                const aspectRatio =
-                    maskImage.naturalHeight /
-                    maskImage.naturalWidth;
-                const maskHeight =
-                    maskWidth * aspectRatio;
-                const centerX =
-                    box.x +
-                    box.width / 2;
-                const centerY =
-                    box.y +
-                    box.height / 2;
-                const x =
-                    centerX -
-                    maskWidth / 2;
-                const y =
-                    centerY -
-                    maskHeight / 2;
-                // =============================================
-                // DIBUJAR MÁSCARA
-                // =============================================
-
-                ctx.drawImage(
-                    maskImage,
-                    x,
-                    y,
-                    maskWidth,
-                    maskHeight
-                );
+    setInterval(
+        async () => {
+            if (!modelsLoaded) {
+                return;
             }
-        );
-    }, 100);
+            let detections;
+            try {
+                detections =
+                    await faceapi
+                        .detectAllFaces(
+                            video,
+                            new faceapi.TinyFaceDetectorOptions({
+                                inputSize: 512,
+                                scoreThreshold: 0.35
+                            })
+                        )
+                        .withFaceLandmarks()
+                        .withAgeAndGender();
+            } catch (error) {
+                console.error(
+                    "Error detectando:",
+                    error
+                );
+                return;
+            }
+            ctx.clearRect(
+                0,
+                0,
+                canvas.width,
+                canvas.height
+            );
+            const resizedDetections =
+                faceapi.resizeResults(
+                    detections,
+                    displaySize
+                );
+
+            // ====================================================
+            // PROCESAR CADA CARA
+            // ====================================================
+
+            resizedDetections.forEach(
+                (detection) => {
+
+                    // ============================================
+                    // EDAD
+                    // ============================================
+
+                    const age =
+                        Math.round(
+                            detection.age
+                        );
+
+                    // ============================================
+                    // GÉNERO
+                    // ============================================
+
+                    const gender =
+                        detection.gender;
+
+                    // ============================================
+                    // OBTENER IMAGEN
+                    // ============================================
+
+                    const imagePath =
+                        getMaskImagePath(
+                            age,
+                            gender
+                        );
+                    if (!imagePath) {
+                        return;
+                    }
+                    const maskImage =
+                        loadedImages[
+                            imagePath
+                        ];
+                    if (!maskImage) {
+                        return;
+                    }
+
+                    // ============================================
+                    // CAJA DE LA CARA
+                    // ============================================
+
+                    const box =
+                        detection.detection.box;
+
+                    // ============================================
+                    // TAMAÑO DE LA IMAGEN
+                    // ============================================
+
+                    const maskWidth =
+                        box.width *
+                        MASK_SCALE;
+                    const aspectRatio =
+                        maskImage.naturalHeight /
+                        maskImage.naturalWidth;
+                    const maskHeight =
+                        maskWidth *
+                        aspectRatio;
+
+                    // ============================================
+                    // CENTRO DE LA CARA
+                    // ============================================
+
+                    const centerX =
+                        box.x +
+                        box.width / 2;
+                    const centerY =
+                        box.y +
+                        box.height / 2;
+
+                    // ============================================
+                    // POSICIÓN DE LA IMAGEN
+                    // ============================================
+
+                    const x =
+                        centerX -
+                        maskWidth / 2;
+                    const y =
+                        centerY -
+                        maskHeight / 2;
+
+                    // ============================================
+                    // DIBUJAR IMAGEN
+                    // ============================================
+
+                    ctx.drawImage(
+                        maskImage,
+                        x,
+                        y,
+                        maskWidth,
+                        maskHeight
+                    );
+                }
+            );
+        },
+        100
+    );
 }
