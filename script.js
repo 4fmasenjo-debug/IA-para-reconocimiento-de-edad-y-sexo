@@ -219,59 +219,45 @@ function startDetection() {
                     }
 
                     // ============================================
-                    // CAJA DE LA CARA
-                    // ============================================
+// CAJA DE LA CARA
+// ============================================
 
-                    const box =
-                        detection.detection.box;
+const box = detection.detection.box;
 
-                    // ============================================
-                    // TAMAÑO DE LA IMAGEN
-                    // ============================================
+// ============================================
+// TAMAÑO DE LA MÁSCARA
+// ============================================
 
-                    const maskWidth =
-                        box.width *
-                        MASK_SCALE;
-                    const aspectRatio =
-                        maskImage.naturalHeight /
-                        maskImage.naturalWidth;
-                    const maskHeight =
-                        maskWidth *
-                        aspectRatio;
+const maskWidth = box.width * 1.15;
 
-                    // ============================================
-                    // CENTRO DE LA CARA
-                    // ============================================
+const aspectRatio =
+    maskImage.naturalHeight /
+    maskImage.naturalWidth;
 
-                    const centerX =
-                        box.x +
-                        box.width / 2;
-                    const centerY =
-                        box.y +
-                        box.height / 2;
+const maskHeight =
+    maskWidth * aspectRatio;
 
-                    // ============================================
-                    // POSICIÓN DE LA IMAGEN
-                    // ============================================
+// ============================================
+// POSICIÓN
+// ============================================
+const x =
+    box.x +
+    (box.width - maskWidth) / 2;
+const y =
+    box.y -
+    maskHeight * 0.10;
 
-                    const x =
-                        centerX -
-                        maskWidth / 2;
-                    const y =
-                        centerY -
-                        maskHeight / 2;
+// ============================================
+// DIBUJAR
+// ============================================
 
-                    // ============================================
-                    // DIBUJAR IMAGEN
-                    // ============================================
-
-                    ctx.drawImage(
-                        maskImage,
-                        x,
-                        y,
-                        maskWidth,
-                        maskHeight
-                    );
+ctx.drawImage(
+    maskImage,
+    x,
+    y,
+    maskWidth,
+    maskHeight
+                );
                 }
             );
         },
